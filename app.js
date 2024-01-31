@@ -44,14 +44,39 @@ app.set('view engine', 'ejs');
 // Configuração das rotas do servidor HTTP
 // A lógica ddo processamento de cada rota deve ser realizada aqui
 app.get('/', (req, res) => {
+    db.query('SELECT * FROM blog', (err, result) =>{
+        if (err) throw err;
     // Passe a variável 'req' para o template e use-a nas páginas para renderizar partes do HTML conforme determinada condição
     // Por exemplo de o usuário estive logado, veja este exemplo no arquivo views/partials/header.ejs
-    res.render('pages/index', { req: req });
+    res.render('pages/index', { req: req, blog: result });
     // Caso haja necessidade coloque pontos de verificação para verificar pontos da sua logica de negócios
     console.log(`${req.session.username ? `Usuário ${req.session.username} logado no IP ${req.connection.remoteAddress}` : 'Usuário não logado.'}  `);
     //console.log(req.connection)
     ;
+    });
 });
+
+app.get('/', (req, res) => {
+    res.render('index')
+})
+
+app.get('/receberblog', (req, res) => {
+    if (req.session.loggedin){
+        if (req.session.usertype === "Administrador") {
+    }
+    const query = 'SELECT * FROM blog';
+    db.query(query, (err, results) => {
+    if (err) {
+        console.error('Erro ao obter coments', err);
+    } else {
+        
+    res.render('pages/receberblog', {comentario: results, req: req});
+    }
+
+});
+}});
+
+
 
 // Rota para a página de login
 app.get('/login', (req, res) => {
@@ -167,7 +192,55 @@ app.get('/teste', (req, res) => {
 });
 
 
-app.listen(3000, () => {
-    console.log('----Login (MySQL version)-----')
-    console.log('Servidor rodando na porta 3000');
-});
+
+
+// Fazer blog 
+app.post('/fazerblog', async (req, res) => {
+    const { comentario } = req.body;
+    const username = req.session.username;
+
+     if (req.session.username){
+        const username = req.session.username;
+        console.log("ent tá", username);
+     }
+
+     const SQL = 'INSERT INTO blog (usuario, comentario) VALUES (?,?)';
+     db.query(SQL, [username, comentario], (err,result) => {
+        if (err) {
+            console.error('Erro ao comentar', err);
+            res.status(500).send('Erro ao comentar');
+        } else {
+            console.log(username+"comentou: " + comentario);
+
+            res.redirect('/receberblog');
+
+            }
+        });
+    });
+
+// Fazer blog 
+app.post('/receberblog', (req, res) => {
+    const query = 'SELECT * FROM blog';
+    
+     db.query(query, (err, results) => {
+        if (err) {
+            console.error('Erro ao obter comentários', err);
+            res.status(500).send('Erro ao receber comentários');
+        } else {
+            res.render('pages/receberblog', {comentario: results, req: res});
+
+            }
+        });
+    });
+
+
+
+
+
+    app.listen(3000, () => {
+        console.log('----Login (MySQL version)-----')
+        console.log('Servidor rodando na porta 3000');
+    });
+
+
+
